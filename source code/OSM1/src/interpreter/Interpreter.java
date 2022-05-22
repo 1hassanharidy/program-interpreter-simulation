@@ -9,10 +9,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Scanner;
 
+import static interpreter.Memory.*;
+
 public class Interpreter {
 
 	private LinkedList timings = new LinkedList<>();
-	public static int noOfInstructions = 2;
+	public static int noOfInstructions = 5;
 	public int globalpid;
 	public int timepid = 1;
 	int[][] processes;
@@ -23,14 +25,57 @@ public class Interpreter {
 	 * program add content of program to an Arraylist(instructions) of the new
 	 * process add the new process to the ready queue lastly calls schedule method
 	 */
+
+	private int getInstructionCount(String s) throws FileNotFoundException {
+		File myObj = new File(s + ".txt");
+		Scanner myReader = new Scanner(myObj);
+
+		String processData;
+		int count = 4;
+		while (myReader.hasNextLine()) {
+			processData = myReader.nextLine();
+			long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
+			if (spaceCounter == 2) {
+				String[] instructionParts = processData.split("\\s+", 3);
+				if (instructionParts[0].equals("assign")) {
+					if (instructionParts[2].toLowerCase().equals("input")) {
+						count += 2;
+
+					} else
+						count++;
+
+				} else
+					count++;
+
+			} else if (spaceCounter == 3) {
+				String[] instructionParts = processData.split("\\s+", 4);
+				if (instructionParts[0].toLowerCase().equals("assign")
+						&& instructionParts[2].toLowerCase().equals("readfile")) {
+					count += 2;
+				} else
+					count++;
+
+				myReader.close();
+			}
+
+			//Queues.ReadyQueue.add(newProcess);
+			//System.out.println(s + " is Process " + timepid);
+		}
+		return count;
+	}
+
+
 	private void parse(String s, int timepid) {
 		try {
 
 			File myObj = new File(s + ".txt");
 			Scanner myReader = new Scanner(myObj);
 			Process newProcess = new Process();
-			newProcess.pid = timepid;
+			newProcess.pcb.pid = timepid;
 			String processData;
+			int count=0;
+			int minbnd=ptr;
+
 			while (myReader.hasNextLine()) {
 				processData = myReader.nextLine();
 				long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
@@ -38,25 +83,38 @@ public class Interpreter {
 					String[] instructionParts = processData.split("\\s+", 3);
 					if (instructionParts[0].equals("assign")) {
 						if (instructionParts[2].toLowerCase().equals("input")) {
-							newProcess.instructions.add(instructionParts[2]);
-							newProcess.instructions.add(instructionParts[0] + " " + instructionParts[1]);
-						} else
-							newProcess.instructions.add(processData);
+							memory[ptr].setVariable("Instr"+count++);
+							memory[ptr++].setData(instructionParts[2]);
+							memory[ptr].setVariable("Instr"+count++);
+							memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
+						} else {
+							memory[ptr].setVariable("Instr"+count++);
+							memory[ptr++].setData(processData);
+						}
 
-					} else
-						newProcess.instructions.add(processData);
+					} else {
+						memory[ptr].setVariable("Instr"+count++);
+						memory[ptr++].setData(processData);
+					}
 
 				} else if (spaceCounter == 3) {
 					String[] instructionParts = processData.split("\\s+", 4);
 					if (instructionParts[0].toLowerCase().equals("assign")
 							&& instructionParts[2].toLowerCase().equals("readfile")) {
-						newProcess.instructions.add(instructionParts[2] + " " + instructionParts[3]);
-						newProcess.instructions.add(instructionParts[0] + " " + instructionParts[1]);
+						memory[ptr].setVariable("Instr"+count++);
+						memory[ptr++].setData(instructionParts[2] + " " + instructionParts[3]);
+						memory[ptr].setVariable("Instr"+count++);
+						memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
 					}
-				} else
-					newProcess.instructions.add(processData);
+				} else {
+					memory[ptr].setVariable("Instr" + count++);
+					memory[ptr++].setData(processData);
+				}
 			}
 			myReader.close();
+			//memory[ptr++].setVariable();
+			memory[ptr].setVariable("PCB " + timepid);
+			memory[ptr].setData(new PCB(timepid,State.READY,minbnd,minbnd,ptr)); ptr++;
 			Queues.ReadyQueue.add(newProcess);
 			System.out.println(s + " is Process " + timepid);
 			// schedule(newProcess);
@@ -66,7 +124,7 @@ public class Interpreter {
 		}
 	}
 
-	private void run(String[][] programs) {
+	private void run(String[][] programs) throws FileNotFoundException {
 		hm = new HashMap<>();
 		globalpid = 1;
 
@@ -93,8 +151,14 @@ public class Interpreter {
 		for (String[] program : programs) {
 			if (Integer.parseInt(program[0]) == mintime) {
 				System.out.println("time "+mintime);
-				this.parse(program[1], globalpid);
-				timepid++;
+				if(this.getInstructionCount(program[1]) >= remSize) {
+					this.parse(program[1], globalpid);
+					timepid++;
+					remSize -= this.getInstructionCount(program[1]);
+				}
+				else{
+
+				}
 			} else {
 				hm.put(Integer.parseInt(program[0]), globalpid);
 
@@ -106,7 +170,7 @@ public class Interpreter {
 
 	}
 
-	public void checktime(HashMap hm, String[][] programs, int time) {
+	public void checktime(HashMap hm, String[][] programs, int time) throws FileNotFoundException {
 
 		if (hm.containsKey(time)) {
 
@@ -114,9 +178,16 @@ public class Interpreter {
 				for (String[] program : programs) {
 					if (Integer.parseInt(program[0]) == time) {
 						System.out.println("time "+time);
-						parse(program[1], timepid);
-						hm.remove(time);
-						timepid++;
+						if(this.getInstructionCount(program[1]) >= remSize) {
+							parse(program[1], timepid);
+							hm.remove(time);
+							timepid++;
+							remSize -= this.getInstructionCount(program[1]);
+						}
+						else{
+
+						}
+
 
 					}
 				}
@@ -130,7 +201,7 @@ public class Interpreter {
 			System.out.println("Empty");
 		else {
 			for (Process p : Queues.ReadyQueue) {
-				System.out.println("Process " + p.pid);
+				System.out.println("Process " + p.pcb.pid);
 			}
 		}
 	}
@@ -138,7 +209,7 @@ public class Interpreter {
 	// schedule method functionality implemented by person responsible for scheduler
 	// part.
 	// execute method is called to execute the instructions of the process.
-	private void schedule(String[][] programs, int mintime) {
+	private void schedule(String[][] programs, int mintime) throws FileNotFoundException {
 		int time = mintime;
 		while (!Queues.ReadyQueue.isEmpty() || !hm.isEmpty()) {
 			if (Queues.ReadyQueue.isEmpty()) {
@@ -153,7 +224,7 @@ public class Interpreter {
 
 			Process inCPU = Queues.ReadyQueue.removeFirst();
 
-			System.out.println("Process in CPU is Process " + inCPU.pid);
+			System.out.println("Process in CPU is Process " + inCPU.pcb.pid);
 
 
 
@@ -163,7 +234,7 @@ public class Interpreter {
 
 			displayRQueue();
 
-			System.out.println("Executing Process " + inCPU.pid);
+			System.out.println("Executing Process " + inCPU.pcb.pid);
 
 			int executedInstructions = 0;
 			while (executedInstructions < noOfInstructions) {
@@ -221,7 +292,7 @@ public class Interpreter {
 				// if(Queues.ReadyQueue.isEmpty() && Queues.BlockedQueue.isEmpty())
 				// return;
 				System.out.println("\ntime " + time);
-				System.out.println("\nProcess " + inCPU.pid + " has finished");
+				System.out.println("\nProcess " + inCPU.pcb.pid + " has finished");
 
 			}
 			System.out.println("\n-----------------------------------");
@@ -361,10 +432,10 @@ public class Interpreter {
 
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws FileNotFoundException {
 		// TODO Auto-generated method stub
 		Interpreter os = new Interpreter();
-		String[][] programs = { { "0", "Program_1" }, { "1", "Program_2" }, { "4", "Program_3" } };
+		String[][] programs = { { "4", "Program_1" }, { "0", "Program_2" }, { "6", "Program_3" } };
 		os.run(programs);
 
 	}
@@ -386,7 +457,7 @@ public class Interpreter {
 		else {
 
 			for (Process p : Queues.BlockedQueue) {
-				System.out.println("Process " + p.pid);
+				System.out.println("Process " + p.pcb.pid);
 			}
 		}
 		System.out.println();
@@ -400,7 +471,7 @@ public class Interpreter {
 		else {
 
 			for (Process p : Mutex.AccessingFile.queue) {
-				System.out.println("Process " + p.pid);
+				System.out.println("Process " + p.pcb.pid);
 			}
 		}
 		System.out.println();
@@ -413,7 +484,7 @@ public class Interpreter {
 		else {
 
 			for (Process p : Mutex.OutputtingOnScreen.queue) {
-				System.out.println("Process " + p.pid);
+				System.out.println("Process " + p.pcb.pid);
 			}
 		}
 		System.out.println();
@@ -427,7 +498,7 @@ public class Interpreter {
 		else {
 
 			for (Process p : Mutex.TakingInput.queue) {
-				System.out.println("Process " + p.pid);
+				System.out.println("Process " + p.pcb.pid);
 			}
 		}
 		System.out.println();

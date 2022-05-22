@@ -7,11 +7,11 @@ import java.io.IOException;
 import java.util.*;
 
 public class Process {
-	private ArrayList<MemoryData> processMemory; // changed from x to processMemory.
+	public static ArrayList<MemoryData> processMemory; // changed from x to processMemory.
 	protected ArrayList<String> instructions; // added to hold instructions of process.
 	protected int instructionIndex = 0;
 	private static final Scanner sc = new Scanner(System.in);
-	protected int pid;
+	protected PCB pcb;
 	// readFileArg is the variable that holds the return value of readFile in assign
 	// x readFile y
 	protected String readFileArg = "";
@@ -28,27 +28,29 @@ public class Process {
 		this.processMemory = new ArrayList<MemoryData>();
 		this.instructions = new ArrayList<String>();
 	}
-
-	// System calls
-	protected void print(String val) {
-		String output = null;
+	private String read(String var) {
+		Object output=var;
 		for (MemoryData d : this.processMemory) {
-			if (d.getVariable().equals(val)) {
+			if (d.getVariable().equals(var)) {
 				output = d.getData();
 			}
 		}
+		return output.toString();
+	}
+
+	// System calls
+	protected void print(String val) {
+		String output = read(val);
+		
 		System.out.print(output);
 	}
 
 	private void printVar(String var) {
-		for (MemoryData d : this.processMemory) {
-			if (d.getVariable().equals(var))
-				this.print(d.getData());
-		}
+		print(read(var));
 	}
 
 	protected String take() {
-		System.out.print("[Process:" + this.pid + "]" + "Please enter a value\n");
+		System.out.print("[Process:" + pcb.pid + "]" + "Please enter a value\n");
 		String val = sc.nextLine();
 		return val;
 	}
@@ -70,38 +72,19 @@ public class Process {
 	}
 
 	protected void printFromTo(String var1, String var2) {
-		int val1 = 0;
-		int val2 = 0;
-		boolean found1 = false;
-		boolean found2 = false;
-		for (MemoryData d : this.processMemory) {
-			if (d.getVariable().equals(var1)) {
-				val1 = Integer.parseInt(d.getData());
-				found1 = true;
-			}
-			if (d.getVariable().equals(var2)) {
-				val2 = Integer.parseInt(d.getData());
-				found2 = true;
-			}
-		}
-		if (found1 && found2 && val1 <= val2) {
+		int val1 = Integer.parseInt(read(var1));
+		int val2 = Integer.parseInt(read(var2));
+		
 			for (int i = val1; i <= val2; i++)
-				System.out.print(i + " ");
-		}
+				print(i + " ");
+		
 	}
 
 	protected void writeFile(String name, String val) {
-		String fileName = name;
-		String fileData = val;
+		String fileName = read(name);
+		String fileData = read(val);
 		try {
-			for (MemoryData d : this.processMemory) {
-				if (d.getVariable().equals(name)) {
-					fileName = d.getData();
-				}
-				if (d.getVariable().equals(val)) {
-					fileData = d.getData();
-				}
-			}
+			
 
 			File myObj = new File(fileName + ".txt");
 			if (myObj.createNewFile()) {
@@ -126,13 +109,9 @@ public class Process {
 
 	protected String readFile(String name) {
 		try {
-			String fileName = name;
+			String fileName = read(name);
 
-			for (MemoryData d : this.processMemory) {
-				if (d.getVariable().equals(name)) {
-					fileName = d.getData();
-				}
-			}
+			
 			File myObj = new File(fileName + ".txt");
 			Scanner myReader = new Scanner(myObj);
 			String data = myReader.nextLine();

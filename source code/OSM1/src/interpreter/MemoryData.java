@@ -2,18 +2,23 @@ package interpreter;
 
 public class MemoryData {
 	private String variable;
-	private String data;
 
-	public MemoryData(String variable, String data) {
+	public void setVariable(String variable) {
+		this.variable = variable;
+	}
+
+	private Object data;
+
+	public MemoryData(String variable, Object data) {
 		this.data = data;
 		this.variable = variable;
 	}
 
-	public String getData() {
+	public Object getData() {
 		return data;
 	}
 
-	public void setData(String data) {
+	public void setData(Object data) {
 		this.data = data;
 	}
 
