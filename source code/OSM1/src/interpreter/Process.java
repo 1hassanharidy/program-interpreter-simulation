@@ -1,5 +1,7 @@
 package interpreter;
 
+import static interpreter.Memory.ptr;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -37,7 +39,11 @@ public class Process {
 		}
 		return output.toString();
 	}
-
+	
+	protected void createPCB(int pid, State state, int pc, int minbound, int maxbound) {
+		pcb = new PCB(pid, state, pc, minbound, maxbound);
+	}
+	
 	// System calls
 	protected void print(String val) {
 		String output = read(val);

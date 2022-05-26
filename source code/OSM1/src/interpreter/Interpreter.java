@@ -75,6 +75,19 @@ public class Interpreter {
 			String processData;
 			int count=0;
 			int minbnd=ptr;
+			
+			newProcess.createPCB(timepid, State.READY, minbnd, minbnd, ptr+7+getInstructionCount(s));
+			memory[ptr].setVariable("pidPCB " + timepid);
+			memory[ptr++].setData(timepid);
+			memory[ptr].setVariable("statePCB " + timepid);
+			memory[ptr++].setData(newProcess.pcb.state);
+			memory[ptr].setVariable("pcPCB " + timepid);
+			memory[ptr++].setData(newProcess.pcb.pc);
+			memory[ptr].setVariable("minboundPCB " + timepid);
+			memory[ptr++].setData(newProcess.pcb.minbound);
+			memory[ptr].setVariable("maxboundPCB " + timepid);
+			memory[ptr++].setData(newProcess.pcb.maxbound);
+			ptr++;
 
 			while (myReader.hasNextLine()) {
 				processData = myReader.nextLine();
@@ -112,9 +125,6 @@ public class Interpreter {
 				}
 			}
 			myReader.close();
-			//memory[ptr++].setVariable();
-			memory[ptr].setVariable("PCB " + timepid);
-			memory[ptr].setData(new PCB(timepid,State.READY,minbnd,minbnd,ptr)); ptr++;
 			Queues.ReadyQueue.add(newProcess);
 			System.out.println(s + " is Process " + timepid);
 			// schedule(newProcess);
@@ -318,14 +328,23 @@ public class Interpreter {
 	 */
 	private static void execute(Process p) {
 		try {
-			if (p.instructionIndex < p.instructions.size()) {
-				String executedInstruction = p.instructions.get(p.instructionIndex);
-				if (p.instructionIndex > 0) {
-					String previousInstruction = p.instructions.get(p.instructionIndex - 1);
+			int pc = 0;
+			int pcMemIndex = -1;
+			for (MemoryData d : memory) {
+				if ((int)d.getData() == p.pcb.pc) {
+					pc = (int)d.getData();
+					pcMemIndex++;
+					break;
 				}
+				pcMemIndex++;
+			}
+			int lastInst = p.pcb.maxbound;
+			if (pc <= lastInst) {
+				String executedInstruction = (String) memory[pc].getData();
 
 				long spaceCounter = executedInstruction.chars().filter(ch -> ch == ' ').count();
-				p.instructionIndex++;
+				p.pcb.pc++;
+				memory[pcMemIndex].incrementData();
 				if (spaceCounter == 0 && executedInstruction.toLowerCase().equals("input")) {
 					if (!p.inputFlag) {
 						p.inputArg = p.take();
@@ -419,7 +438,7 @@ public class Interpreter {
 
 				}
 			} else {
-				p.instructions.clear();
+				p.pcb.state = State.FINISHED;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

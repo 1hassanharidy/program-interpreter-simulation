@@ -17,6 +17,16 @@ public class MemoryData {
 	public Object getData() {
 		return data;
 	}
+	
+	public void incrementData() {
+		try {
+			 this.data=(Object)((int)this.data + 1);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		
+	}
 
 	public void setData(Object data) {
 		this.data = data;
