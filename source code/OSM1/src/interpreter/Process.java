@@ -14,6 +14,10 @@ public class Process {
 	protected int instructionIndex = 0;
 	private static final Scanner sc = new Scanner(System.in);
 	protected PCB pcb;
+
+	protected boolean inDisk = false;
+
+	protected int timeInMem = 0;
 	// readFileArg is the variable that holds the return value of readFile in assign
 	// x readFile y
 	protected String readFileArg = "";

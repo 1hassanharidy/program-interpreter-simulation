@@ -13,7 +13,10 @@ public class MemoryData {
 		this.data = data;
 		this.variable = variable;
 	}
-
+	public MemoryData() {
+		this.data = null;
+		this.variable = null;
+	}
 	public Object getData() {
 		return data;
 	}

@@ -1,7 +1,6 @@
 package interpreter;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -67,11 +66,9 @@ public class Interpreter {
 
 	private void parse(String s, int timepid) {
 		try {
-
 			File myObj = new File(s + ".txt");
 			Scanner myReader = new Scanner(myObj);
 			Process newProcess = new Process();
-			newProcess.pcb.pid = timepid;
 			String processData;
 			int count=0;
 			int minbnd=ptr;
@@ -87,7 +84,6 @@ public class Interpreter {
 			memory[ptr++].setData(newProcess.pcb.minbound);
 			memory[ptr].setVariable("maxboundPCB " + timepid);
 			memory[ptr++].setData(newProcess.pcb.maxbound);
-			ptr++;
 
 			while (myReader.hasNextLine()) {
 				processData = myReader.nextLine();
@@ -134,7 +130,7 @@ public class Interpreter {
 		}
 	}
 
-	private void run(String[][] programs) throws FileNotFoundException {
+	private void run(String[][] programs) throws Exception {
 		hm = new HashMap<>();
 		globalpid = 1;
 
@@ -163,12 +159,14 @@ public class Interpreter {
 				System.out.println("time "+mintime);
 				if(this.getInstructionCount(program[1]) >= remSize) {
 					this.parse(program[1], globalpid);
-					timepid++;
+
 					remSize -= this.getInstructionCount(program[1]);
 				}
 				else{
+					//unload(program[1],timepid);
 
 				}
+				timepid++;
 			} else {
 				hm.put(Integer.parseInt(program[0]), globalpid);
 
@@ -180,7 +178,240 @@ public class Interpreter {
 
 	}
 
-	public void checktime(HashMap hm, String[][] programs, int time) throws FileNotFoundException {
+	public void writeToDisk(Process p,int pid) throws Exception {
+		File copy = new File(p.pcb.pid + ".txt");
+		p.inDisk = true;
+		//Scanner myReader = new Scanner(myObj);
+		//newProcess.pcb.pid = timepid;
+		String processData;
+		int count = 0;
+		int index = ptr;
+		copy.createNewFile();
+		FileWriter myWriter = new FileWriter(copy);
+
+		//newProcess.createPCB(timepid, State.READY, minbnd, minbnd, ptr+7+getInstructionCount(s));
+		myWriter.write("pidPCB " + p.pcb.pid); index++;
+		myWriter.write("statePCB " + State.READY); index++;
+		myWriter.write("pcPCB " + p.pcb.pc); index++;
+		myWriter.write("minboundPCB " + p.pcb.minbound); index++;
+		myWriter.write("maxboundPCB " + p.pcb.maxbound); index++;
+
+		for (int i = p.pcb.minbound; i <= p.pcb.maxbound; i++) {
+			String x = String.valueOf(memory[i]);
+			long spaceCounter = x.chars().filter(ch -> ch == ' ').count();
+			String[] y = x.split("//s");
+			if (x.contains("assign")) {
+				if(spaceCounter==1){
+					if(p.processMemory.contains(y[1]))
+					{
+						for(MemoryData m: p.processMemory){
+							if (m.getVariable() == y[1]) {
+								myWriter.write(y[1]+" "+m.getData());
+							}
+						}
+					}
+					else{
+						myWriter.write(y[1] + " Null");
+					}
+				}
+				else{
+					if(p.processMemory.contains(y[1]))
+					{
+						for(MemoryData m: p.processMemory){
+							if (m.getVariable() == y[1]) {
+								myWriter.write(y[1]+" "+m.getData());
+							}
+						}
+					}
+					else{
+						myWriter.write(y[1] + " Null");
+					}
+					if(p.processMemory.contains(y[2])){
+						for(MemoryData m: p.processMemory){
+							if (m.getVariable() == y[2]) {
+								myWriter.write(y[2]+" "+m.getData());
+							}
+						}
+					}
+					else{
+						myWriter.write(y[2] + " Null");
+					}
+
+				}
+
+			}
+			myWriter.write("Instr" + count + " " + x);
+			count++;
+		}
+		for (int i = p.pcb.minbound; i <= p.pcb.maxbound; i++) {
+			String x = String.valueOf(memory[i]);
+			long spaceCounter = x.chars().filter(ch -> ch == ' ').count();
+			String[] y = x.split("//s");
+			if (x.contains("assign")) {
+				if (spaceCounter == 1) {
+					if (p.processMemory.contains(y[1])) {
+						for (MemoryData m : p.processMemory) {
+							if (m.getVariable() == y[1]) {
+								myWriter.write(y[1] + " " + m.getData());
+							}
+						}
+					} else {
+						myWriter.write(y[1] + " Null");
+					}
+				} else {
+					if (p.processMemory.contains(y[1])) {
+						for (MemoryData m : p.processMemory) {
+							if (m.getVariable() == y[1]) {
+								myWriter.write(y[1] + " " + m.getData());
+							}
+						}
+					} else {
+						myWriter.write(y[1] + " Null");
+					}
+					if (p.processMemory.contains(y[2])) {
+						for (MemoryData m : p.processMemory) {
+							if (m.getVariable() == y[2]) {
+								myWriter.write(y[2] + " " + m.getData());
+							}
+						}
+					} else {
+						myWriter.write(y[2] + " Null");
+					}
+
+				}
+
+			}
+		}
+
+		//System.out.println(s + " is Process " + timepid);
+	}
+
+	public Process readFromDisk(String s) throws FileNotFoundException {
+		Scanner myReader = new Scanner(new File(s + ".txt"));
+		Process newProcess = null;
+		for(Process p: Queues.ReadyQueue)
+		{
+			if (p.pcb.pid == Integer.parseInt(s)) {
+				newProcess = p;
+			}
+		}
+		newProcess.inDisk = false;
+
+		String processData;
+		String[] x = myReader.nextLine().split("\\s");
+		int pidd = Integer.parseInt(x[1]);
+		x = myReader.nextLine().split("\\s");
+		State st = State.READY;
+		x = myReader.nextLine().split("\\s");
+		int pcc = Integer.parseInt(x[1]);
+		 x = myReader.nextLine().split("\\s");
+		int min = Integer.parseInt(x[1]);
+		x = myReader.nextLine().split("\\s");
+		int max = Integer.parseInt(x[1]);
+
+		newProcess.createPCB(pidd, st, pcc, min, max);
+
+		int ptr1 = newProcess.pcb.minbound;
+
+		memory[ptr1].setVariable("pidPCB " + newProcess.pcb.pid);
+		memory[ptr1++].setData(timepid);
+		memory[ptr1].setVariable("statePCB " + newProcess.pcb.pid);
+		memory[ptr1++].setData(newProcess.pcb.state);
+		memory[ptr1].setVariable("pcPCB " + newProcess.pcb.pid);
+		memory[ptr1++].setData(newProcess.pcb.pc);
+		memory[ptr1].setVariable("minboundPCB " + newProcess.pcb.pid);
+		memory[ptr1++].setData(newProcess.pcb.minbound);
+		memory[ptr1].setVariable("maxboundPCB " + newProcess.pcb.pid);
+		memory[ptr1++].setData(newProcess.pcb.maxbound);
+
+		while (myReader.hasNextLine()) {
+			processData = myReader.nextLine();
+			int count = 0;
+			long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
+			if (spaceCounter == 3) {
+				String[] instructionParts = processData.split("\\s+", 4);
+				if (instructionParts[1].equals("assign")) {
+					if (instructionParts[3].toLowerCase().equals("input")) {
+						memory[ptr1].setVariable("Instr"+count++);
+						memory[ptr1++].setData(instructionParts[3]);
+						memory[ptr1].setVariable("Instr"+count++);
+						memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[2]);
+					} else {
+						memory[ptr1].setVariable("Instr"+count++);
+						memory[ptr1++].setData(processData);
+					}
+
+				} else {
+					memory[ptr1].setVariable("Instr"+count++);
+					memory[ptr1++].setData(processData);
+				}
+
+			} else if (spaceCounter == 4) {
+				String[] instructionParts = processData.split("\\s+", 5);
+				if (instructionParts[1].toLowerCase().equals("assign")
+						&& instructionParts[3].toLowerCase().equals("readfile")) {
+					memory[ptr1].setVariable("Instr"+count++);
+					memory[ptr1++].setData(instructionParts[3] + " " + instructionParts[4]);
+					memory[ptr1].setVariable("Instr"+count++);
+					memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[2]);
+				}
+			}
+			else if(spaceCounter == 2){
+				String[] instructionParts = processData.split("\\s+", 3);
+				memory[ptr1].setVariable(instructionParts[0]);
+				memory[ptr1++].setData(instructionParts[1]);
+			}
+			else {
+				memory[ptr1].setVariable("Instr" + count++);
+				memory[ptr1++].setData(processData);
+			}
+		}
+		return newProcess;
+	}
+
+	public static void copyContent(File a, File b)
+			throws Exception
+	{
+		FileInputStream in = new FileInputStream(a);
+		FileOutputStream out = new FileOutputStream(b);
+
+		try {
+
+			int n;
+
+			// read() function to read the
+			// byte of data
+			while ((n = in.read()) != -1) {
+				// write() function to write
+				// the byte of data
+				out.write(n);
+			}
+		}
+		finally {
+			if (in != null) {
+
+				// close() function to close the
+				// stream
+				in.close();
+			}
+			// close() function to close
+			// the stream
+			if (out != null) {
+				out.close();
+			}
+		}
+		System.out.println("File Copied");
+	}
+
+	public Process getLongest(){
+		Process x = Queues.ReadyQueue.get(0);
+		for(Process p : Queues.ReadyQueue){
+			if(p.timeInMem> x.timeInMem) x = p;
+		}
+		return x;
+	}
+
+	public void checktime(HashMap hm, String[][] programs, int time) throws Exception {
 
 		if (hm.containsKey(time)) {
 
@@ -188,13 +419,21 @@ public class Interpreter {
 				for (String[] program : programs) {
 					if (Integer.parseInt(program[0]) == time) {
 						System.out.println("time "+time);
-						if(this.getInstructionCount(program[1]) >= remSize) {
+						if(this.getInstructionCount(program[1]) <= remSize) {
 							parse(program[1], timepid);
 							hm.remove(time);
 							timepid++;
 							remSize -= this.getInstructionCount(program[1]);
 						}
 						else{
+							Process remove = getLongest();
+							writeToDisk(remove,remove.pcb.pid);
+							remSize += remove.pcb.maxbound-remove.pcb.minbound + 1;
+							remove = null;
+							parse(program[1], timepid);
+							hm.remove(time);
+							timepid++;
+							remSize -= this.getInstructionCount(program[1]);
 
 						}
 
@@ -204,6 +443,8 @@ public class Interpreter {
 			}
 		}
 	}
+
+
 
 	public void displayRQueue() {
 		System.out.println("\nReadyQueue \n");
@@ -219,7 +460,7 @@ public class Interpreter {
 	// schedule method functionality implemented by person responsible for scheduler
 	// part.
 	// execute method is called to execute the instructions of the process.
-	private void schedule(String[][] programs, int mintime) throws FileNotFoundException {
+	private void schedule(String[][] programs, int mintime) throws Exception {
 		int time = mintime;
 		while (!Queues.ReadyQueue.isEmpty() || !hm.isEmpty()) {
 			if (Queues.ReadyQueue.isEmpty()) {
@@ -233,6 +474,15 @@ public class Interpreter {
 			checktime(hm, programs, time);
 
 			Process inCPU = Queues.ReadyQueue.removeFirst();
+			if(inCPU.inDisk) {
+				Process remove = getLongest();
+				writeToDisk(remove, remove.pcb.pid);
+				remSize += remove.pcb.maxbound - remove.pcb.minbound + 1;
+				remove = null;
+				readFromDisk(String.valueOf(inCPU.pcb.pid));
+				//parse(program[1], timepid);
+			}
+
 
 			System.out.println("Process in CPU is Process " + inCPU.pcb.pid);
 
@@ -252,6 +502,9 @@ public class Interpreter {
 					break;
 				else {
 					checktime(hm, programs, time);
+					System.out.println("Out In");
+					if(inCPU.inDisk)
+						readFromDisk(String.valueOf(inCPU.pcb.pid));
 					System.out.println("\ntime " + time);
 
 					System.out.println("\nExecuting instruction of index " + inCPU.instructionIndex+": ");
@@ -260,7 +513,8 @@ public class Interpreter {
 
 
 					execute(inCPU);
-
+					inCPU.timeInMem++;
+					incrementTime();
 					time++;
 					if (Queues.BlockedQueue.contains(inCPU)) {
 						System.out.println("\nProcess Blocked\n");
@@ -292,6 +546,8 @@ public class Interpreter {
 				if (!Queues.ReadyQueue.contains(inCPU) && !Queues.BlockedQueue.contains(inCPU)) {
 					//System.out.println("\ntime " + time);
 					checktime(hm,programs,time);
+					if(inCPU==null)
+						break;
 					Queues.ReadyQueue.addLast(inCPU);
 
 				}
@@ -312,7 +568,11 @@ public class Interpreter {
 	}
 
 
-
+	public void incrementTime(){
+		for(Process p: Queues.ReadyQueue){
+			p.timeInMem++;
+		}
+	}
 	/*
 	 * [Deprecated] execute method executes one instruction at a time. (one
 	 * instruction/function call) it starts by comparing the process'
@@ -451,10 +711,14 @@ public class Interpreter {
 
 	}
 
-	public static void main(String[] args) throws FileNotFoundException {
+	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 		Interpreter os = new Interpreter();
-		String[][] programs = { { "4", "Program_1" }, { "0", "Program_2" }, { "6", "Program_3" } };
+		String[][] programs = { { "0", "Program_1" }, { "1", "Program_2" }, { "4", "Program_3" } };
+		for (MemoryData m : memory) {
+			m = new MemoryData();
+		}
+
 		os.run(programs);
 
 	}
