@@ -30,7 +30,7 @@ public class Interpreter {
 		Scanner myReader = new Scanner(myObj);
 
 		String processData;
-		int count = 4;
+		int count = 8;
 		while (myReader.hasNextLine()) {
 			processData = myReader.nextLine();
 			long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
@@ -54,12 +54,14 @@ public class Interpreter {
 				} else
 					count++;
 
-				myReader.close();
+				
 			}
 
 			//Queues.ReadyQueue.add(newProcess);
 			//System.out.println(s + " is Process " + timepid);
 		}
+		myReader.close();
+
 		return count;
 	}
 
@@ -73,18 +75,24 @@ public class Interpreter {
 			int count=0;
 			int minbnd=ptr;
 			
-			newProcess.createPCB(timepid, State.READY, minbnd, minbnd, ptr+7+getInstructionCount(s));
-			memory[ptr].setVariable("pidPCB " + timepid);
-			memory[ptr++].setData(timepid);
-			memory[ptr].setVariable("statePCB " + timepid);
-			memory[ptr++].setData(newProcess.pcb.state);
-			memory[ptr].setVariable("pcPCB " + timepid);
-			memory[ptr++].setData(newProcess.pcb.pc);
-			memory[ptr].setVariable("minboundPCB " + timepid);
-			memory[ptr++].setData(newProcess.pcb.minbound);
-			memory[ptr].setVariable("maxboundPCB " + timepid);
-			memory[ptr++].setData(newProcess.pcb.maxbound);
-
+			newProcess.createPCB(timepid, State.READY, ptr+8, minbnd, ptr+8+getInstructionCount(s));
+			memory[ptr++]=new MemoryData("pidPCB " + timepid,timepid);
+			//memory[ptr++].setData(timepid);
+			memory[ptr++]=new MemoryData("statePCB " + timepid,newProcess.pcb.state);
+			//memory[ptr].setVariable("statePCB " + timepid);
+			//memory[ptr++].setData(newProcess.pcb.state);
+			memory[ptr++]=new MemoryData("pcPCB " + timepid,newProcess.pcb.pc);
+			//memory[ptr].setVariable("pcPCB " + timepid);
+			//memory[ptr++].setData(newProcess.pcb.pc);
+			memory[ptr++]=new MemoryData("minboundPCB " + timepid,newProcess.pcb.minbound);
+			//memory[ptr].setVariable("minboundPCB " + timepid);
+			//memory[ptr++].setData(newProcess.pcb.minbound);
+			memory[ptr++]=new MemoryData("maxboundPCB " + timepid,newProcess.pcb.maxbound);
+			//memory[ptr].setVariable("maxboundPCB " + timepid);
+			//memory[ptr++].setData(newProcess.pcb.maxbound);
+			memory[ptr++]=new MemoryData("a","Null");
+			memory[ptr++]=new MemoryData("b","Null");
+			memory[ptr++]=new MemoryData("c","Null");
 			while (myReader.hasNextLine()) {
 				processData = myReader.nextLine();
 				long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
@@ -92,16 +100,20 @@ public class Interpreter {
 					String[] instructionParts = processData.split("\\s+", 3);
 					if (instructionParts[0].equals("assign")) {
 						if (instructionParts[2].toLowerCase().equals("input")) {
+							memory[ptr]=new MemoryData();
 							memory[ptr].setVariable("Instr"+count++);
 							memory[ptr++].setData(instructionParts[2]);
+							memory[ptr]=new MemoryData();
 							memory[ptr].setVariable("Instr"+count++);
 							memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
 						} else {
+							memory[ptr]=new MemoryData();
 							memory[ptr].setVariable("Instr"+count++);
 							memory[ptr++].setData(processData);
 						}
 
 					} else {
+						memory[ptr]=new MemoryData();
 						memory[ptr].setVariable("Instr"+count++);
 						memory[ptr++].setData(processData);
 					}
@@ -110,17 +122,22 @@ public class Interpreter {
 					String[] instructionParts = processData.split("\\s+", 4);
 					if (instructionParts[0].toLowerCase().equals("assign")
 							&& instructionParts[2].toLowerCase().equals("readfile")) {
+						memory[ptr]=new MemoryData();
 						memory[ptr].setVariable("Instr"+count++);
 						memory[ptr++].setData(instructionParts[2] + " " + instructionParts[3]);
+						memory[ptr]=new MemoryData();
 						memory[ptr].setVariable("Instr"+count++);
 						memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
 					}
 				} else {
+					memory[ptr]=new MemoryData();
 					memory[ptr].setVariable("Instr" + count++);
 					memory[ptr++].setData(processData);
 				}
 			}
 			myReader.close();
+			
+			
 			Queues.ReadyQueue.add(newProcess);
 			System.out.println(s + " is Process " + timepid);
 			// schedule(newProcess);
@@ -284,6 +301,7 @@ public class Interpreter {
 		}
 
 		//System.out.println(s + " is Process " + timepid);
+		System.out.println(copy.getCanonicalPath());
 	}
 
 	public Process readFromDisk(String s) throws FileNotFoundException {
@@ -498,7 +516,7 @@ public class Interpreter {
 
 			int executedInstructions = 0;
 			while (executedInstructions < noOfInstructions) {
-				if (inCPU.instructionIndex >= inCPU.instructions.size())
+				if (inCPU.pcb.pc >= inCPU.pcb.maxbound)
 					break;
 				else {
 					checktime(hm, programs, time);
@@ -507,12 +525,13 @@ public class Interpreter {
 						readFromDisk(String.valueOf(inCPU.pcb.pid));
 					System.out.println("\ntime " + time);
 
-					System.out.println("\nExecuting instruction of index " + inCPU.instructionIndex+": ");
-					System.out.println(inCPU.instructions.get(inCPU.instructionIndex));
+					System.out.print("\nExecuting instruction  ");
+					memory[inCPU.pcb.pc].printMemData();
 					executedInstructions++;
 
 
-					execute(inCPU);
+					//execute(inCPU);
+					inCPU.pcb.pc++;
 					inCPU.timeInMem++;
 					incrementTime();
 					time++;
@@ -532,17 +551,17 @@ public class Interpreter {
 					else{
 						System.out.println("\nInstruction Done\n");
 					}
-					if (inCPU.instructions.get(inCPU.instructionIndex - 1).contains("semSignal")) {
-						System.out.println("semSignal occured ");
-						displayRQueue();
-						displayBQueue();
-						displayInputQueue();
-						displayMFileQueue();
-						displayOutputQueue();
-					}
+//					if (inCPU.instructions.get(inCPU.instructionIndex - 1).contains("semSignal")) {
+//						System.out.println("semSignal occured ");
+//						displayRQueue();
+//						displayBQueue();
+//						displayInputQueue();
+//						displayMFileQueue();
+//						displayOutputQueue();
+//					}
 				}
 			}
-			if (inCPU.instructionIndex < inCPU.instructions.size())
+			if (inCPU.pcb.pc < inCPU.pcb.maxbound)
 				if (!Queues.ReadyQueue.contains(inCPU) && !Queues.BlockedQueue.contains(inCPU)) {
 					//System.out.println("\ntime " + time);
 					checktime(hm,programs,time);

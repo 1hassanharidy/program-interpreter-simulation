@@ -38,5 +38,8 @@ public class MemoryData {
 	public String getVariable() {
 		return variable;
 	}
+	public void printMemData() {
+		System.out.print(this.variable+" "+String.valueOf(this.data));		
+	}
 
 }
