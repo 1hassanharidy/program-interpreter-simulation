@@ -30,7 +30,7 @@ public class Interpreter {
 		Scanner myReader = new Scanner(myObj);
 
 		String processData;
-		int count = 8;
+		int count = 0;
 		while (myReader.hasNextLine()) {
 			processData = myReader.nextLine();
 			long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
@@ -76,18 +76,18 @@ public class Interpreter {
 			int minbnd=ptr;
 			
 			newProcess.createPCB(timepid, State.READY, ptr+8, minbnd, ptr+8+getInstructionCount(s));
-			memory[ptr++]=new MemoryData("pidPCB " + timepid,timepid);
+			memory[ptr++]=new MemoryData("pid of process " + timepid+":",timepid);
 			//memory[ptr++].setData(timepid);
-			memory[ptr++]=new MemoryData("statePCB " + timepid,newProcess.pcb.state);
+			memory[ptr++]=new MemoryData("state of process " + timepid+":",newProcess.pcb.state);
 			//memory[ptr].setVariable("statePCB " + timepid);
 			//memory[ptr++].setData(newProcess.pcb.state);
-			memory[ptr++]=new MemoryData("pcPCB " + timepid,newProcess.pcb.pc);
+			memory[ptr++]=new MemoryData("pc of process " + timepid+";",newProcess.pcb.pc);
 			//memory[ptr].setVariable("pcPCB " + timepid);
 			//memory[ptr++].setData(newProcess.pcb.pc);
-			memory[ptr++]=new MemoryData("minboundPCB " + timepid,newProcess.pcb.minbound);
+			memory[ptr++]=new MemoryData("minbound of process " + timepid+":",newProcess.pcb.minbound);
 			//memory[ptr].setVariable("minboundPCB " + timepid);
 			//memory[ptr++].setData(newProcess.pcb.minbound);
-			memory[ptr++]=new MemoryData("maxboundPCB " + timepid,newProcess.pcb.maxbound);
+			memory[ptr++]=new MemoryData("maxbound of prcoess " + timepid+":",newProcess.pcb.maxbound);
 			//memory[ptr].setVariable("maxboundPCB " + timepid);
 			//memory[ptr++].setData(newProcess.pcb.maxbound);
 			memory[ptr++]=new MemoryData("a","Null");
@@ -174,10 +174,10 @@ public class Interpreter {
 		for (String[] program : programs) {
 			if (Integer.parseInt(program[0]) == mintime) {
 				System.out.println("time "+mintime);
-				if(this.getInstructionCount(program[1]) >= remSize) {
+				if(this.getInstructionCount(program[1])+8 <= remSize) {
 					this.parse(program[1], globalpid);
 
-					remSize -= this.getInstructionCount(program[1]);
+					remSize -= (this.getInstructionCount(program[1])+8);
 				}
 				else{
 					//unload(program[1],timepid);
@@ -304,16 +304,18 @@ public class Interpreter {
 		System.out.println(copy.getCanonicalPath());
 	}
 
-	public Process readFromDisk(String s) throws FileNotFoundException {
+	public Process readFromDisk(String s,Process p) throws FileNotFoundException {
 		Scanner myReader = new Scanner(new File(s + ".txt"));
 		Process newProcess = null;
-		for(Process p: Queues.ReadyQueue)
-		{
-			if (p.pcb.pid == Integer.parseInt(s)) {
-				newProcess = p;
-			}
-		}
-		newProcess.inDisk = false;
+//		for(Process p: Queues.ReadyQueue)
+//		{
+//			if (p.pcb.pid == Integer.parseInt(s)) {
+//				newProcess = p;
+//			}
+//		}
+		  newProcess=p;
+		
+		   newProcess.inDisk = false;
 
 		String processData;
 		String[] x = myReader.nextLine().split("\\s");
@@ -437,11 +439,11 @@ public class Interpreter {
 				for (String[] program : programs) {
 					if (Integer.parseInt(program[0]) == time) {
 						System.out.println("time "+time);
-						if(this.getInstructionCount(program[1]) <= remSize) {
+						if(this.getInstructionCount(program[1])+8 <= remSize) {
 							parse(program[1], timepid);
 							hm.remove(time);
 							timepid++;
-							remSize -= this.getInstructionCount(program[1]);
+							remSize -= (this.getInstructionCount(program[1])+8);
 						}
 						else{
 							Process remove = getLongest();
@@ -451,7 +453,7 @@ public class Interpreter {
 							parse(program[1], timepid);
 							hm.remove(time);
 							timepid++;
-							remSize -= this.getInstructionCount(program[1]);
+							remSize -= (this.getInstructionCount(program[1])+8);
 
 						}
 
@@ -480,6 +482,7 @@ public class Interpreter {
 	// execute method is called to execute the instructions of the process.
 	private void schedule(String[][] programs, int mintime) throws Exception {
 		int time = mintime;
+		
 		while (!Queues.ReadyQueue.isEmpty() || !hm.isEmpty()) {
 			if (Queues.ReadyQueue.isEmpty()) {
 				System.out.println("time " + time);
@@ -490,16 +493,20 @@ public class Interpreter {
 			}
 
 			checktime(hm, programs, time);
+			
 
 			Process inCPU = Queues.ReadyQueue.removeFirst();
+			
 			if(inCPU.inDisk) {
 				Process remove = getLongest();
 				writeToDisk(remove, remove.pcb.pid);
 				remSize += remove.pcb.maxbound - remove.pcb.minbound + 1;
 				remove = null;
-				readFromDisk(String.valueOf(inCPU.pcb.pid));
+				readFromDisk(String.valueOf(inCPU.pcb.pid),inCPU);
 				//parse(program[1], timepid);
 			}
+			inCPU.pcb.state=State.RUNNING;
+			memory[inCPU.pcb.minbound+1].setData("Running");
 
 
 			System.out.println("Process in CPU is Process " + inCPU.pcb.pid);
@@ -516,13 +523,14 @@ public class Interpreter {
 
 			int executedInstructions = 0;
 			while (executedInstructions < noOfInstructions) {
+				printMemory(inCPU);
 				if (inCPU.pcb.pc >= inCPU.pcb.maxbound)
 					break;
 				else {
 					checktime(hm, programs, time);
 					System.out.println("Out In");
 					if(inCPU.inDisk)
-						readFromDisk(String.valueOf(inCPU.pcb.pid));
+						readFromDisk(String.valueOf(inCPU.pcb.pid),inCPU);
 					System.out.println("\ntime " + time);
 
 					System.out.print("\nExecuting instruction  ");
@@ -568,6 +576,8 @@ public class Interpreter {
 					if(inCPU==null)
 						break;
 					Queues.ReadyQueue.addLast(inCPU);
+					inCPU.pcb.state=State.READY;
+					memory[inCPU.pcb.minbound+1].setData("Ready");
 
 				}
 				else {
@@ -805,4 +815,30 @@ public class Interpreter {
 		}
 		System.out.println();
 	}
+	public static void printMemory(Process p) {
+		System.out.println("MEMORY");
+		LinkedList <Process>a=(LinkedList) Queues.ReadyQueue.clone();
+		if(p!=null)
+			a.add(p);
+		
+		if(a!=null) {
+      Collections.sort(a, new Comparator<Process>() {
+				    @Override
+				    public int compare(Process o1, Process o2) {
+				        return o2.pcb.pid >= o1.pcb.pid?1:0;
+				    }
+				});
+		//System.out.println(a.size()); 
+      int s=a.size();
+	for (int i=1;i<=s;i++) {
+		Process x=a.removeFirst();
+		//System.out.println(x.inDisk);
+		if (!x.inDisk) {
+			
+			for(int c=x.pcb.minbound;c<x.pcb.maxbound;c++ )
+				memory[c].printMemData();
+		}
+		//System.out.println(a.size());
+	}
+	}}
 }
