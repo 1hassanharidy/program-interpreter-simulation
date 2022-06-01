@@ -198,11 +198,13 @@ public class Interpreter {
 		File f = new File(p.pcb.pid + ".txt");
 		FileWriter fw = new FileWriter(f);
 		for (int i = p.pcb.minbound; i < p.pcb.maxbound; i++) {
-			fw.write(String.valueOf(memory[i].getVariable()) + " " + String.valueOf(memory[i].getData()));
+			//memory[i].printMemData();
+			fw.write(memory[i].getVariable() + " " + String.valueOf(memory[i].getData()));
 			memory[i]=null;
-			fw.write(System.getProperty("line.separator"));
+			if(i!=p.pcb.maxbound-1)
+			  fw.write(System.getProperty("line.separator"));
 		}
-		memory[p.pcb.maxbound] = null;
+		//memory[p.pcb.maxbound-1] = null;
 		p.inDisk = true;
 		fw.flush();
 		fw.close();
@@ -284,15 +286,14 @@ public class Interpreter {
 
 			} else if (spaceCounter == 4) {
 				String[] instructionParts = processData.split("\\s+", 5);
-				if (instructionParts[1].toLowerCase().equals("assign")
-						&& instructionParts[3].toLowerCase().equals("readfile")) {
+				
 					memory[ptr1] = new MemoryData();
 					memory[ptr1].setVariable(instructionParts[0]);
-					memory[ptr1++].setData(instructionParts[3] + " " + instructionParts[3]);
-					memory[ptr1] = new MemoryData();
-					memory[ptr1].setVariable(instructionParts[0]);
-					memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[1]);
-				}
+					memory[ptr1++].setData(instructionParts[2] + " " + instructionParts[3]+" " + instructionParts[4]);
+//					memory[ptr1] = new MemoryData();
+//					memory[ptr1].setVariable(instructionParts[0]);
+//					memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[1]);
+//				
 			} else {
 				String[] instructionParts = processData.split("\\s+", 5);
 				memory[ptr1] = new MemoryData();
@@ -314,12 +315,15 @@ public class Interpreter {
 
 
 	public Process getLongest(){
+		if(Queues.ReadyQueue.size()>0) {
 		Process x = Queues.ReadyQueue.get(0);
 		for(Process p : Queues.ReadyQueue){
 			if(p.timeInMem > x.timeInMem) x = p;
 		}
 		return x;
 	}
+		else
+			return null;}
 
 	public void checktime(HashMap hm, String[][] programs, int time) throws Exception {
 
@@ -388,8 +392,9 @@ public class Interpreter {
 			
 			if(inCPU.inDisk) {
 				Process remove = getLongest();
+				if(remove!=null) {
 				writeToDisk(remove, remove.pcb.pid);
-				remSize += remove.pcb.maxbound - remove.pcb.minbound + 1;
+				remSize += remove.pcb.maxbound - remove.pcb.minbound + 1;}
 				readFromDisk(String.valueOf(inCPU.pcb.pid),inCPU);
 				inCPU.inDisk = false;
 				//parse(program[1], timepid);
@@ -429,6 +434,7 @@ public class Interpreter {
 
 					//execute(inCPU);
 					inCPU.pcb.pc++;
+					memory[inCPU.pcb.minbound+2].setData(inCPU.pcb.pc);
 					inCPU.timeInMem++;
 					incrementTime();
 					time++;
