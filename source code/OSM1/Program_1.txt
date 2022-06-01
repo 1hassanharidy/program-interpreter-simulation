@@ -2,3 +2,9 @@ assign a 10
 assign c 50
 printFromTo a c
 printFromTo a c
+printFromTo a c
+printFromTo a c
+printFromTo a c
+printFromTo a c
+printFromTo a c
+

@@ -20,6 +20,10 @@ public class MemoryData {
 	public Object getData() {
 		return data;
 	}
+
+	public String getData1(){
+		return String.valueOf(data);
+	}
 	
 	public void incrementData() {
 		try {

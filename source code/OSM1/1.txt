@@ -1,0 +1,17 @@
+PID 1
+State Ready
+PC 8
+minbnd 0
+maxbound 17
+a Null
+b Null
+c Null
+Instr0 assign a 10
+Instr1 assign c 50
+Instr2 printFromTo a c
+Instr3 printFromTo a c
+Instr4 printFromTo a c
+Instr5 printFromTo a c
+Instr6 printFromTo a c
+Instr7 printFromTo a c
+Instr8 printFromTo a c
