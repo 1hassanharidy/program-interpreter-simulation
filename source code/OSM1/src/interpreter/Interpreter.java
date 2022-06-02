@@ -38,7 +38,7 @@ public class Interpreter {
 				String[] instructionParts = processData.split("\\s+", 3);
 				if (instructionParts[0].equals("assign")) {
 					if (instructionParts[2].toLowerCase().equals("input")) {
-						count += 2;
+						count += 1;
 
 					} else
 						count++;
@@ -50,11 +50,14 @@ public class Interpreter {
 				String[] instructionParts = processData.split("\\s+", 4);
 				if (instructionParts[0].toLowerCase().equals("assign")
 						&& instructionParts[2].toLowerCase().equals("readfile")) {
-					count += 2;
+					count += 1;
 				} else
 					count++;
 
 
+			}
+			else {
+				count++;
 			}
 
 			//Queues.ReadyQueue.add(newProcess);
@@ -95,46 +98,32 @@ public class Interpreter {
 			memory[ptr++] = new MemoryData("c", "Null");
 			while (myReader.hasNextLine()) {
 				processData = myReader.nextLine();
+				System.out.println(processData);
 				long spaceCounter = processData.chars().filter(ch -> ch == ' ').count();
-				if (spaceCounter == 2) {
-					String[] instructionParts = processData.split("\\s+", 3);
-					if (instructionParts[0].equals("assign")) {
-						if (instructionParts[2].toLowerCase().equals("input")) {
-							memory[ptr] = new MemoryData();
-							memory[ptr].setVariable("Instr" + count++);
-							memory[ptr++].setData(instructionParts[2]);
-							memory[ptr] = new MemoryData();
-							memory[ptr].setVariable("Instr" + count++);
-							memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
-						} else {
-							memory[ptr] = new MemoryData();
-							memory[ptr].setVariable("Instr" + count++);
-							memory[ptr++].setData(processData);
-						}
-
-					} else {
+				
 						memory[ptr] = new MemoryData();
 						memory[ptr].setVariable("Instr" + count++);
 						memory[ptr++].setData(processData);
-					}
+					
 
-				} else if (spaceCounter == 3) {
-					String[] instructionParts = processData.split("\\s+", 4);
-					if (instructionParts[0].toLowerCase().equals("assign")
-							&& instructionParts[2].toLowerCase().equals("readfile")) {
-						memory[ptr] = new MemoryData();
-						memory[ptr].setVariable("Instr" + count++);
-						memory[ptr++].setData(instructionParts[2] + " " + instructionParts[3]);
-						memory[ptr] = new MemoryData();
-						memory[ptr].setVariable("Instr" + count++);
-						memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
-					}
-				} else {
-					memory[ptr] = new MemoryData();
-					memory[ptr].setVariable("Instr" + count++);
-					memory[ptr++].setData(processData);
-				}
-			}
+				} //else if (spaceCounter == 3) {
+					//String[] instructionParts = processData.split("\\s+", 4);
+//					if (instructionParts[0].toLowerCase().equals("assign")
+//							&& instructionParts[2].toLowerCase().equals("readfile")) {
+//						memory[ptr] = new MemoryData();
+//						memory[ptr].setVariable("Instr" + count++);
+//						memory[ptr++].setData(instructionParts[2] + " " + instructionParts[3]);
+//						memory[ptr] = new MemoryData();
+//						memory[ptr].setVariable("Instr" + count++);
+//						memory[ptr++].setData(instructionParts[0] + " " + instructionParts[1]);
+//					}
+			//	} 
+//				else {
+//					memory[ptr] = new MemoryData();
+//					memory[ptr].setVariable("Instr" + count++);
+//					memory[ptr++].setData(processData);
+//				}
+			
 			myReader.close();
 
 
@@ -264,41 +253,41 @@ public class Interpreter {
 
 			if (spaceCounter == 3) {
 				String[] instructionParts = processData.split("\\s+", 4);
-				if (instructionParts[1].equals("assign")) {
-					if (instructionParts[3].toLowerCase().equals("input")) {
+				
 						memory[ptr1] = new MemoryData();
 						memory[ptr1].setVariable(instructionParts[0]);
-						memory[ptr1++].setData(instructionParts[2]);
-						memory[ptr1] = new MemoryData();
-						memory[ptr1].setVariable(instructionParts[0]);
-						memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[2]);
-					} else {
-						memory[ptr1] = new MemoryData();
-						memory[ptr1].setVariable(instructionParts[0]);
-						memory[ptr1++].setData(processData);
-					}
+						memory[ptr1++].setData(instructionParts[1]+" "+instructionParts[2]+" "+instructionParts[3]);
+					
 
-				} else {
-					memory[ptr1] = new MemoryData();
-					memory[ptr1].setVariable(instructionParts[0]);
-					memory[ptr1++].setData(processData);
+				
 				}
 
-			} else if (spaceCounter == 4) {
+			else if (spaceCounter == 4) {
 				String[] instructionParts = processData.split("\\s+", 5);
 				
 					memory[ptr1] = new MemoryData();
 					memory[ptr1].setVariable(instructionParts[0]);
-					memory[ptr1++].setData(instructionParts[2] + " " + instructionParts[3]+" " + instructionParts[4]);
+					memory[ptr1++].setData(instructionParts[1]+" "+instructionParts[2] + " " + instructionParts[3]+" " + instructionParts[4]);
 //					memory[ptr1] = new MemoryData();
 //					memory[ptr1].setVariable(instructionParts[0]);
 //					memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[1]);
 //				
-			} else {
-				String[] instructionParts = processData.split("\\s+", 5);
+			} else if (spaceCounter == 5) {
+				String[] instructionParts = processData.split("\\s+", 6);
+				
 				memory[ptr1] = new MemoryData();
 				memory[ptr1].setVariable(instructionParts[0]);
-				memory[ptr1++].setData(processData);
+				memory[ptr1++].setData(instructionParts[2] + " " + instructionParts[3]+" " + instructionParts[4]+" " + instructionParts[5]);
+			}
+			else if (spaceCounter == 2) {
+				String[] instructionParts = processData.split("\\s+", 3);
+				memory[ptr1] = new MemoryData();
+				memory[ptr1].setVariable(instructionParts[0]);
+//				String a="";
+//				for(int i=1;i<instructionParts.length;i++)
+//					a+=(" "+instructionParts[i]);
+				memory[ptr1++].setData(instructionParts[1] + " " + instructionParts[2]);
+
 			}
 
 
