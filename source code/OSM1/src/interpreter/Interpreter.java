@@ -298,6 +298,9 @@ public class Interpreter {
 		p = newProcess;
 		p.inDisk = false;
 		p.timeInMem = 0;
+		FileWriter fw = new FileWriter(f);
+		fw.write("");
+		fw.close();
 		System.out.println("process "+p.pcb.pid+" "+ "swapped from disk to memory , file name: " +p.pcb.pid+".txt" );
 		return p;
 	}
@@ -414,7 +417,7 @@ public class Interpreter {
 					break;
 				else {
 					checktime(hm, programs, time);
-					System.out.println("Out In");
+				//	System.out.println("Out In");
 					if(inCPU.inDisk)
 						readFromDisk(String.valueOf(inCPU.pcb.pid),inCPU);
 					System.out.println("\ntime " + time);
